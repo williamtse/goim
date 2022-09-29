@@ -1,27 +1,55 @@
+// Copyright 2013 The Gorilla WebSocket Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package main
 
 import (
-	"GoIM/pkg/common/config"
-	"GoIM/pkg/common/constant"
-	"GoIM/pkg/common/log"
+	"GoIM/internal/app/server"
 	"flag"
-	"fmt"
-	"sync"
+	"log"
+	"net/http"
 )
 
+var addr = flag.String("addr", ":8080", "http service address")
+
+func serveHome(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.URL)
+	if r.URL.Path != "/" {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	http.ServeFile(w, r, "home.html")
+}
+
+func login(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.URL)
+	if r.URL.Path != "/login" {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	http.ServeFile(w, r, "login.html")
+}
+
 func main() {
-	log.NewPrivateLog(constant.LogFileName)
-	defaultRpcPorts := config.Config.RpcPort.OpenImMessageGatewayPort
-	defaultWsPorts := config.Config.LongConnSvr.WebsocketPort
-	defaultPromePorts := config.Config.Prometheus.MessageGatewayPrometheusPort
-	rpcPort := flag.Int("rpc_port", defaultRpcPorts[0], "rpc listening port")
-	wsPort := flag.Int("ws_port", defaultWsPorts[0], "ws listening port")
-	prometheusPort := flag.Int("prometheus_port", defaultPromePorts[0], "PushrometheusPort default listen port")
 	flag.Parse()
-	var wg sync.WaitGroup
-	wg.Add(1)
-	fmt.Println("start rpc/msg_gateway server, port: ", *rpcPort, *wsPort, *prometheusPort, "OpenIM version: ", constant.CurrentVersion, "\n")
-	gate.Init(*rpcPort, *wsPort)
-	gate.Run(*prometheusPort)
-	wg.Wait()
+	hub := server.NewHub()
+	go hub.Run()
+	http.HandleFunc("/", serveHome)
+	http.HandleFunc("/login", login)
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		server.ServeWs(hub, w, r)
+	})
+	err := http.ListenAndServe(*addr, nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
