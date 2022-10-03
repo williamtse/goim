@@ -338,3 +338,9 @@ const StatisticsTimeInterval = 60
 const MaxNotificationNum = 100
 
 const CurrentVersion = "v2.3.3"
+
+const (
+	AccessTokenPrefix         = "goim_token_"
+	UserWsConnectedHostPrefix = "goim_host_"
+	UidPrefix                 = "goim_uid_"
+)

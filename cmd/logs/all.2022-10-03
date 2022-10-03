@@ -1,0 +1,4 @@
+2022-10-03 20:09:35.030[36m [INFO] [PID:19244] [FilePath:app/server/rpc_server.go:103] [OperationID:] [0m[PushMsgToUser is arriving msgData:{recvID:"2" content:"saff"} pushToUserID:"2"]
+2022-10-03 20:15:54.906[36m [INFO] [PID:18104] [FilePath:app/server/rpc_server.go:104] [OperationID:] [0m[PushMsgToUser is arriving msgData:{recvID:"2"  content:"uguhhkjhjk"}  pushToUserID:"2"]
+2022-10-03 20:18:10.820[36m [INFO] [PID:20088] [FilePath:app/server/rpc_server.go:104] [OperationID:] [0m[PushMsgToUser is arriving msgData:{recvID:"2" content:"222"} pushToUserID:"2"]
+2022-10-03 20:18:20.265[36m [INFO] [PID:24096] [FilePath:app/server/rpc_server.go:104] [OperationID:] [0m[PushMsgToUser is arriving msgData:{recvID:"1" content:"adfsdf"} pushToUserID:"1"]

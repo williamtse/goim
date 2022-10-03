@@ -6,7 +6,13 @@ package server
 
 import (
 	"GoIM/pkg/auth"
+	"GoIM/pkg/common/constant"
+	"GoIM/pkg/common/db"
+	"GoIM/pkg/common/host"
+	"GoIM/pkg/utils"
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -74,6 +80,8 @@ func (c *Client) readPump() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		messageStr := string(message)
+		fmt.Println("recv msg <= ", messageStr)
 		c.hub.broadcast <- message
 	}
 }
@@ -92,6 +100,7 @@ func (c *Client) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
+			fmt.Println("writePump:message:", message)
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
@@ -125,32 +134,30 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func ServeWs(hub *Hub, addr string, port int, w http.ResponseWriter, r *http.Request) {
 	values := r.URL.Query()
 	tokenStr := values.Get("token")
-	fmt.Println("token<==" + tokenStr)
-	if tokenStr != "" {
-		authUser, err := auth.CheckToken(tokenStr)
-		if err != nil {
-			log.Println("key不存在")
-			log.Println(err)
-		} else {
-			conn, err := upgrader.Upgrade(w, r, nil)
-			if err != nil {
-
-				return
-			}
-			client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-			client.auth = authUser
-			client.hub.register <- client
-			client.hub.auths[tokenStr] = client
-			// Allow collection of memory referenced by the caller by doing all work in
-			// new goroutines.
-			go client.writePump()
-			go client.readPump()
-		}
-	} else {
-		log.Println("access deny")
-		return
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		panic(err.Error())
 	}
+	authUser := auth.GetUserAuthInfo(tokenStr)
+	uHost := &host.UserConnectedHost{}
+	uHost.IP = addr
+	uHost.Port = int32(port)
+	hostKey := constant.UserWsConnectedHostPrefix + utils.Int64ToString(authUser.Id)
+	fmt.Println("保存用户登录服务器地址", hostKey, uHost)
+	hostJson, err := json.Marshal(uHost)
+	err = db.DB.RDB.Set(context.Background(), hostKey, string(hostJson), 0).Err()
+	if err != nil {
+		panic(err.Error())
+	}
+	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	client.auth = authUser
+	client.hub.register <- client
+	client.hub.auths[tokenStr] = client
+	// Allow collection of memory referenced by the caller by doing all work in
+	// new goroutines.
+	go client.writePump()
+	go client.readPump()
 }

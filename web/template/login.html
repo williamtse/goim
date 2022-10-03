@@ -1,0 +1,48 @@
+<form id="loginForm" method="post" class="form-x" onsubmit="return doSubmit(this)">
+    <div>
+        <div>ID：</div>
+        <input type="number" name="id">
+    </div>
+    <div>
+        <div>用户名：</div>
+        <input type="text" name="username">
+    </div>
+    <div class="field">
+        <button type="submit" id="btn" class="button bg-main icon-check-square-o"> 提交</button>
+    </div>
+</form>
+
+<script>
+    function doSubmit(form) {
+        var ajax = new XMLHttpRequest();
+        let formData = new FormData(form);
+        let id = formData.get('id')
+        let username = formData.get('username')
+        if(!username) {
+            return false;
+        }
+        if(!id) {
+            return false;
+        }
+        ajax.open("POST", "http://localhost:3000/auth/access_token", true);
+        ajax.send(formData);
+        ajax.onreadystatechange = function () {
+            if (ajax.readyState == 4) {
+                if (ajax.status >= 200 && ajax.status < 300 || ajax.status == 304) {
+                    var obj = JSON.parse(ajax.responseText);
+                    console.log('response', obj)
+                    if(obj.code) {
+                        var token = obj.data
+                        alert('token='+token)
+                        location.href="/?token="+token
+                    } else {
+                        alert('登录失败')
+                    }
+                    
+                }
+            }
+        }
+        return false;
+    }
+
+</script>
